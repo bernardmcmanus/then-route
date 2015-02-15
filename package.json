@@ -1,7 +1,7 @@
 {
   "name": "node-http-router",
   "version": "0.1.0",
-  "description": "RegExp-based http routing for node.js",
+  "description": "RegExp/Promise-based http request router",
   "main": "dist/node-http-router.js",
   "scripts": {
     "test": "mocha test/test.js"

@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - c3680ce - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 686f552 - 2015-02-15 */
 
 (function() {
     "use strict";
