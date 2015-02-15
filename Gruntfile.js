@@ -25,7 +25,7 @@ module.exports = function( grunt ) {
     },
 
     jshint: {
-      all: [ /*'Gruntfile.js' ,*/ LIB ],
+      all: [ 'Gruntfile.js' , LIB ],
       options: {
         esnext: true
       }

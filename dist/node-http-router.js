@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 8856e4e - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - c3680ce - 2015-02-15 */
 
 (function() {
     "use strict";
@@ -21,7 +21,7 @@
       var that = this;
       that.go = [];
       that.stop = [];
-      that.pattern = router$$BuildRegexp( pattern , true );
+      that.pattern = router$$BuildRegexp( pattern , { terminate: true });
       requires$$E$.construct( that );
     }
 
@@ -104,7 +104,7 @@
       });
 
       that.verbose = true;
-      that.pattern = router$$BuildRegexp( base || '/' );
+      that.pattern = router$$BuildRegexp( base || '/' , { anchor: true });
       that.routes = {
         get: get
       };
@@ -116,18 +116,23 @@
     }
 
     var router$$default = router$$Router;
-    function router$$BuildRegexp( pattern , terminate ) {
+    function router$$BuildRegexp( pattern , options ) {
+
+      var defaults = {
+        anchor: false,
+        terminate: false,
+        modifiers: undefined
+      };
+      
       pattern = pattern || /.*/;
+      options = requires$$extend( defaults , options );
+
+      var prefix = options.anchor ? '^' : '';
+      var suffix = options.terminate ? '\\/?' : '';
+
       if (typeof pattern == 'string') {
         pattern = pattern.replace( /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g , '\\$&' );
-        return new RegExp( /*'^' + */ pattern + ( terminate ? '\\/?' : '' ));
-      }
-      return pattern;
-    }
-
-    function router$$ParseRegexp( pattern ) {
-      if (pattern instanceof RegExp) {
-        pattern = pattern.toString();
+        return new RegExp(( prefix + pattern + suffix ) , options.modifiers );
       }
       return pattern;
     }
