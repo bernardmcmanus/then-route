@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - ed7fac5 - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 8856e4e - 2015-02-15 */
 
 (function() {
     "use strict";
@@ -7,6 +7,8 @@
     var requires$$path = require( 'path' );
 
     var requires$$querystring = require( 'querystring' );
+
+    var requires$$util = require( 'util' );
 
     var requires$$E$ = require( 'emoney' );
 
@@ -19,75 +21,75 @@
       var that = this;
       that.go = [];
       that.stop = [];
-      that.pattern = request$handler$$RequestHandler.RegExp( pattern );
+      that.pattern = router$$BuildRegexp( pattern , true );
+      requires$$E$.construct( that );
     }
 
     var request$handler$$default = request$handler$$RequestHandler;
 
-    request$handler$$RequestHandler.RegExp = function( pattern ) {
-      if (typeof pattern == 'string') {
-        pattern = pattern.replace( /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g , '\\$&' );
-        return new RegExp( '^' +  pattern + '$' );
-      }
-      return pattern;
-    };
+    request$handler$$RequestHandler.prototype = requires$$E$.create({
+      testRoute: router$$testRoute,
+      then: request$handler$$then,
+      'catch': request$handler$$$catch,
+      exec: request$handler$$exec,
+      _tic: request$handler$$_tic
+    });
 
-    request$handler$$RequestHandler.prototype = {
-      test: function( pathname ) {
-        var that = this;
-        return that.pattern.test( pathname );
-      },
-      then: function( handler ) {
-        var that = this;
-        that.go.push( handler );
-        return that;
-      },
-      catch: function( handler ) {
-        var that = this;
-        that.stop.push( handler );
-        return that;
-      },
-      exec: function( req , res ) {
-        var that = this;
-        var go = that.go.slice( 0 );
-        return new requires$$Promise(function( resolve ) {
-          resolve(
-            that._execNextHandler( go , [ req , res ])
-          );
-        })
-        .catch(function( err ) {
-          var stop = that.stop.slice( 0 );
-          if (err instanceof Error) {
-            console.log(err.stack);
-          }
-          if (stop.length) {
-            return that._execNextHandler( stop , [ req , res , err ]);
-          }
-          else {
-            res.writeHead( 500 , { 'Content-Type': 'text/plain' });
-            res.end( '500 Internal Server Error\n' );
-          }
-        });
-      },
-      _execNextHandler: function( handlers , args ) {
-        var that = this;
-        var func = handlers.shift();
-        return new requires$$Promise(function( resolve , reject ) {
-          /*args[2] = resolve;
-          args[3] = reject;*/
-          var context = { go: resolve, stop: reject };
-          func.apply( context , args );
-        })
-        .then(function( resolvedArgs ) {
-          if (handlers.length) {
-            // args[4] = resolvedArgs;
-            return that._execNextHandler( handlers , args.slice( 0 , 2 ).concat( resolvedArgs ));
-          }
-        });
-      }
-    };
+    function request$handler$$then( handler ) {
+      var that = this;
+      that.go.push( handler );
+      return that;
+    }
 
-    function router$$Router() {
+    function request$handler$$$catch( handler ) {
+      var that = this;
+      that.stop.push( handler );
+      return that;
+    }
+
+    function request$handler$$exec( req , res ) {
+      var that = this;
+      var go = that.go.slice( 0 );
+      return new requires$$Promise(function( resolve ) {
+        resolve(
+          that._tic( go , req , res )
+        );
+      })
+      .catch(function( err ) {
+        var stop = that.stop.slice( 0 );
+        if (err instanceof Error) {
+          that.$emit( 'error' , err );
+        }
+        if (stop.length) {
+          return that._tic( stop , req , res , err );
+        }
+        else {
+          res.writeHead( 500 , { 'Content-Type': 'text/plain' });
+          res.end( '500 Internal Server Error\n' );
+        }
+      });
+    }
+
+    function request$handler$$_tic( handlers , req , res , err ) {
+      var that = this;
+      var func = handlers.shift();
+      return new requires$$Promise(function( resolve , reject ) {
+        var args = [ req , res ];
+        res.$go = resolve;
+        res.$stop = reject;
+        if (err) {
+          args.push( err );
+        }
+        func.apply( null , args );
+      })
+      .then(function( resolvedArgs ) {
+        if (handlers.length) {
+          return that._tic( handlers , req , res );
+        }
+      });
+    }
+
+    function router$$Router( base , options ) {
 
       var that = this;
       var get = [];
@@ -101,70 +103,148 @@
         res.end( body );
       });
 
+      that.verbose = true;
+      that.pattern = router$$BuildRegexp( base || '/' );
       that.routes = {
         get: get
       };
+
+      requires$$extend( that , options );
       
       requires$$E$.construct( that );
-      
       that.$when();
     }
 
     var router$$default = router$$Router;
+    function router$$BuildRegexp( pattern , terminate ) {
+      pattern = pattern || /.*/;
+      if (typeof pattern == 'string') {
+        pattern = pattern.replace( /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g , '\\$&' );
+        return new RegExp( /*'^' + */ pattern + ( terminate ? '\\/?' : '' ));
+      }
+      return pattern;
+    }
+
+    function router$$ParseRegexp( pattern ) {
+      if (pattern instanceof RegExp) {
+        pattern = pattern.toString();
+      }
+      return pattern;
+    }
+
+    function router$$printStack( err ) {
+      var stack = err.stack.split( '\n' );
+      var message = stack.shift();
+      stack = stack.join( '\n' );
+      requires$$util.puts( message.red );
+      requires$$util.puts( stack.gray );
+    }
 
     router$$Router.prototype = requires$$E$.create({
+      testRoute: router$$testRoute,
+      handle: router$$handle,
+      augment: router$$augment,
+      handleE$: router$$handleE$,
+      get: router$$get,
+      destroy: router$$destroy,
+      _handleHTTP: router$$_handleHTTP,
+      _handleRequestHandler: router$$_handleRequestHandler
+    });
 
-      handle: function( req , res ) {
-        var that = this;
-        var parsed = requires$$url.parse( req.url );
-        that.$emit( req.method.toLowerCase() , [ req , res , parsed ]);
-      },
+    function router$$testRoute( pathname ) {
+      var that = this;
+      return that.pattern.test( pathname );
+    }
 
-      extend: function( req , res , parsed ) {
-        
-        var that = this;
+    function router$$handle( req , res ) {
+      var that = this;
+      var parsed = requires$$url.parse( req.url );
+      that.$emit( req.method.toLowerCase() , [ req , res , parsed ]);
+    }
 
-        requires$$extend( req , {
-          path: decodeURIComponent( parsed.pathname ),
-          search: parsed.search,
-          query: requires$$querystring.parse( parsed.query ),
-        });
+    function router$$augment( req , res , parsed ) {
+      
+      var that = this;
 
-        requires$$extend( res , {
-          engage: function( data ) {
-            requires$$extend( res , data );
-            res.busy = true;
-          },
-          busy: false
-        });
-      },
+      requires$$extend( req , {
+        $path: decodeURIComponent( parsed.pathname ),
+        $search: parsed.search,
+        $query: requires$$querystring.parse( parsed.query ),
+      });
 
-      handleE$: function( e , req , res , parsed ) {
-        var that = this;
-        var routes = that.routes[e.type] || [];
-        var reqhandler;
-        for (var i = 0; i < routes.length; i++) {
+      requires$$extend( res , {
+        $engage: function() {
+          var args = arguments;
+          var namespace = args.length < 2 ? 'data' : args[0];
+          var data = args.length > 1 ? args[1] : args[0];
+          res[namespace] = res[namespace] || {};
+          res.$busy = true;
+          requires$$extend( res[namespace] , data );
+        },
+        $busy: false
+      });
+    }
+
+    function router$$handleE$( e ) {
+      var that = this;
+      if (e.target === that) {
+        that._handleHTTP.apply( that , arguments );
+      }
+      else if (e.target instanceof request$handler$$default) {
+        that._handleRequestHandler.apply( that , arguments );
+      }
+    }
+
+    function router$$_handleHTTP( e , req , res , parsed ) {
+      
+      var that = this;
+      var routes = that.routes[e.type] || [];
+      var reqhandler;
+      var i = 0;
+      var len = routes.length;
+
+      that.augment( req , res , parsed );
+
+      if (that.testRoute( parsed.pathname )) {
+        for (; i < len; i++) {
           reqhandler = routes[i];
-          if (reqhandler.test( parsed.pathname ) && !res.busy) {
-            that.extend( req , res , parsed );
+          if (reqhandler.testRoute( parsed.pathname ) && !res.$busy) {
+            res.$engage();
             reqhandler.exec( req , res );
           }
         }
-        requires$$briskit(function() {
-          if (!res.busy) {
-            routes.else.exec( req , res );
-          }
-        });
-      },
-
-      get: function( pattern ) {
-        var that = this;
-        var reqhandler = new request$handler$$default( pattern || /.*/ );
-        that.routes.get.push( reqhandler );
-        return reqhandler;
       }
 
-    });
+      requires$$briskit(function() {
+        if (!res.$busy) {
+          routes.else.exec( req , res );
+        }
+      });
+    }
+
+    function router$$_handleRequestHandler( e , data ) {
+      var that = this;
+      switch (e.type) {
+        case 'error':
+          if (that.verbose) {
+            router$$printStack( data );
+          }
+        break;
+      }
+    }
+
+    function router$$get( pattern ) {
+      var that = this;
+      var reqhandler = new request$handler$$default( pattern );
+      that.$watch( reqhandler );
+      that.routes.get.push( reqhandler );
+      return reqhandler;
+    }
+
+    function router$$destroy() {
+      var that = this;
+      that.$dispel( null , true );
+    }
 
     var $$index$$default = router$$default;
 

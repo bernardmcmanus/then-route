@@ -1,8 +1,8 @@
-import router from './index';
+import Router from './index';
 
 if (typeof define == 'function' && define.amd) {
-  define([], function() { return router });
+  define([], function() { return Router });
 }
 else {
-  module.exports = router;
+  module.exports = Router;
 }

@@ -4,7 +4,6 @@ module.exports = function( grunt ) {
 
   var fs = require( 'fs-extra' );
   var cp = require( 'child_process' );
-  var Promise = require( 'es6-promise' ).Promise;
   var transpiler = require( 'es6-module-transpiler' );
   var Container = transpiler.Container;
   var FileResolver = transpiler.FileResolver;
@@ -26,7 +25,7 @@ module.exports = function( grunt ) {
     },
 
     jshint: {
-      all: [ 'Gruntfile.js' , LIB ],
+      all: [ /*'Gruntfile.js' ,*/ LIB ],
       options: {
         esnext: true
       }
@@ -147,22 +146,18 @@ module.exports = function( grunt ) {
 
 
   grunt.registerTask( 'runTests' , function() {
+
     var done = this.async();
-    new Promise(function( resolve ) {
-      var task = cp.spawn( 'npm' , [ 'test' ]);
-      resolve( task.stdout );
-    })
-    .then(function( readable ) {
-      readable.pipe( process.stdout );
-      return new Promise(function( resolve , reject ) {
-        readable.on( 'end' , resolve );
-        readable.on( 'error' , reject );
-      })
-      .catch(function( err ) {
-        return err;
-      });
-    })
-    .then( done );
+    var child = cp.spawn( 'npm' , [ 'test' ] , {stdio:['pipe','pipe','ignore']});
+
+    child.on( 'exit' , function( code ) {
+      if (code !== 0) {
+        throw grunt.util.error( 'Tests process failed with exit code ' + code + '.\n' );
+      }
+    });
+
+    child.stdout.pipe( process.stdout );
+    child.stdout.on( 'end' , done );
   });
 
 
