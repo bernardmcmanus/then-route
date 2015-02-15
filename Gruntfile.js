@@ -4,10 +4,7 @@ module.exports = function( grunt ) {
 
   var fs = require( 'fs-extra' );
   var cp = require( 'child_process' );
-  var util = require( 'util' );
   var Promise = require( 'es6-promise' ).Promise;
-  var colors = require( 'colors' );
-  var AMDFormatter = require( 'es6-module-transpiler-amd-formatter' );
   var transpiler = require( 'es6-module-transpiler' );
   var Container = transpiler.Container;
   var FileResolver = transpiler.FileResolver;
@@ -41,32 +38,7 @@ module.exports = function( grunt ) {
 
     clean: {
       'dist': [ 'dist' ],
-      'tmp': [ 'tmp' ],
-      'common-dev': [ 'dist/<%= pkg.name %>-<%= pkg.version %>.js' ],
-      'common-prod': [ 'dist/<%= pkg.name %>-<%= pkg.version %>.min.js' ],
-      'amd-dev': [ 'dist/<%= pkg.name %>-<%= pkg.version %>.amd.js' ],
-      'amd-prod': [ 'dist/<%= pkg.name %>-<%= pkg.version %>.amd.min.js' ]
-    },
-
-    replace: {
-      npm: {
-        options: {
-          patterns: [
-            {
-              match: /(\"version\")(.*?)(\")(.{1,}?)(\")/i,
-              replacement: '\"version\": \"<%= pkg.version %>\"'
-            },
-            {
-              match: /(\"main\")(.*?)(\")(.{1,}?)(\")/i,
-              replacement: '\"main\": \"dist/<%= pkg.name %>-<%= pkg.version %>.js\"'
-            }
-          ]
-        },
-        files: [{
-          src: 'package.json',
-          dest: 'package.json'
-        }]
-      }
+      'tmp': [ 'tmp' ]
     },
 
     watch: {
@@ -76,46 +48,13 @@ module.exports = function( grunt ) {
       }
     },
 
-    transpile: {
-      amd: {
-        type: 'amd',
-        files: [{
-          expand: true,
-          cwd: 'lib/',
-          src: [ '**/*.js' ],
-          dest: 'tmp/',
-          ext: '.amd.js'
-        }]
-      }
-    },
-
     concat: {
       options: {
         banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n\n'
       },
-      amd: {
-        src: 'tmp/**/*.amd.js',
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.amd.js'
-      },
-      common: {
-        src: 'tmp/<%= pkg.name %>.common.js',
-        dest: 'dist/<%= pkg.name %>-<%= pkg.version %>.js'
-      }
-    },
-
-    uglify: {
-      options: {
-        banner: '/*! <%= pkg.name %> - <%= pkg.version %> - <%= pkg.author.name %> - <%= grunt.config.get( \'git-branch\' ) %> - <%= grunt.config.get( \'git-hash\' ) %> - <%= grunt.template.today("yyyy-mm-dd") %> */\n'
-      },
-      amd: {
-        files: {
-          'dist/<%= pkg.name %>-<%= pkg.version %>.amd.min.js': 'tmp/**/*.amd.js'
-        }
-      },
-      common: {
-        files: {
-          'dist/<%= pkg.name %>-<%= pkg.version %>.min.js': 'tmp/**/*.js'
-        }
+      build: {
+        src: 'tmp/<%= pkg.name %>.js',
+        dest: 'dist/<%= pkg.name %>.js'
       }
     }
 
@@ -126,11 +65,8 @@ module.exports = function( grunt ) {
     'grunt-contrib-jshint',
     'grunt-contrib-clean',
     'grunt-git-describe',
-    'grunt-replace',
     'grunt-contrib-concat',
-    'grunt-contrib-uglify',
     'grunt-contrib-watch',
-    'grunt-es6-module-transpiler',
     'grunt-import-clean'
   ]
   .forEach( grunt.loadNpmTasks );
@@ -167,9 +103,9 @@ module.exports = function( grunt ) {
   }
 
 
-  grunt.registerTask( 'transpile:common' , function() {
+  grunt.registerTask( 'transpile' , function() {
     var name = grunt.config.get( 'pkg.name' );
-    transpile( '../build/' + name + '.umd' , 'tmp/' + name + '.common.js' );
+    transpile( '../build/' + name + '.umd' , 'tmp/' + name + '.js' );
   });
 
 
@@ -210,20 +146,6 @@ module.exports = function( grunt ) {
   });
 
 
-  grunt.registerTask( 'build:describe-prod' , function() {
-    var files = grunt.file.expand( LIB );
-    var pkg = grunt.config.get( 'pkg' );
-    var name = pkg.name + '-' + pkg.version + '.min.js';
-    var bytesInit = files.reduce(function( prev , current ) {
-      return prev + fs.statSync( current ).size;
-    }, 0);
-    var bytesFinal = fs.statSync( 'dist/' + name ).size;
-    var kbInit = (Math.round( bytesInit / 10 ) / 100);
-    var kbFinal = (Math.round( bytesFinal / 10 ) / 100).toString();
-    console.log('File ' + name.cyan + ' created: ' + (kbInit + ' kB').green + ' \u2192 ' + (kbFinal + ' kB').green);
-  });
-
-
   grunt.registerTask( 'runTests' , function() {
     var done = this.async();
     new Promise(function( resolve ) {
@@ -254,60 +176,15 @@ module.exports = function( grunt ) {
   grunt.registerTask( 'default' , [
     'clean',
     'build',
-    'replace',
-    'test',
-    'build:describe-prod'
+    'test'
   ]);
 
 
   grunt.registerTask( 'build' , [
     'git',
     'clean:dist',
-    //'build:amd',
-    'build:common'
-  ]);
-
-
-  grunt.registerTask( 'build:common' , [
-    'build:common-dev',
-    'build:common-prod'
-  ]);
-
-
-  grunt.registerTask( 'build:common-prod' , [
-    'clean:common-prod',
-    'transpile:common',
-    'uglify:common',
-    'clean:tmp'
-  ]);
-
-
-  grunt.registerTask( 'build:common-dev' , [
-    'clean:common-dev',
-    'transpile:common',
-    'concat:common',
-    'clean:tmp'
-  ]);
-
-
-  grunt.registerTask( 'build:amd' , [
-    'build:amd-dev',
-    'build:amd-prod'
-  ]);
-
-
-  grunt.registerTask( 'build:amd-prod' , [
-    'clean:amd-prod',
-    'transpile:amd',
-    'uglify:amd',
-    'clean:tmp'
-  ]);
-
-
-  grunt.registerTask( 'build:amd-dev' , [
-    'clean:amd-dev',
-    'transpile:amd',
-    'concat:amd',
+    'transpile',
+    'concat',
     'clean:tmp'
   ]);
 
@@ -315,7 +192,7 @@ module.exports = function( grunt ) {
   grunt.registerTask( 'test' , [
     'jshint',
     'import-clean',
-    'build:common-dev',
+    'build',
     'runTests'
   ]);
 
