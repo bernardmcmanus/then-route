@@ -73,22 +73,22 @@
 
     it( 'should anchor base to the beginning of the route' , function( done ) {
 
-        router = new Router( BASE_PATH , { verbose: false });
+      router = new Router( BASE_PATH , { verbose: false });
 
-        var group = getRandomRoute( 'foo/gnarly' );
-        group.url = group.url.replace( BASE_PATH , path.join( '/gnar' , BASE_PATH ));
+      var group = getRandomRoute( 'foo/gnarly' );
+      group.url = group.url.replace( BASE_PATH , path.join( '/gnar' , BASE_PATH ));
 
-        router.get( group.route ).then(function( req , res ) {
-          expect( false ).to.be.ok;
-        });
-
-        get( group.url ).then(function( res ) {
-          expect( res.statusCode ).to.equal( 404 );
-          router.destroy();
-          done();
-        })
-        .catch( done );
+      router.get( group.route ).then(function( req , res ) {
+        expect( false ).to.be.ok;
       });
+
+      get( group.url ).then(function( res ) {
+        expect( res.statusCode ).to.equal( 404 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
 
     it( 'should respond to base route with a trailing /' , function( done ) {
 
