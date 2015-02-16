@@ -16,6 +16,7 @@
     "emoney": "~0.2.3",
     "briskit": "~0.1.0",
     "extend": "~2.0.0",
+    "request": "~2.53.0",
     "grunt": "~0.4.2",
     "grunt-contrib-jshint": "~0.6.3",
     "grunt-contrib-concat": ">=0.4.0",

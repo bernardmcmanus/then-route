@@ -5,6 +5,7 @@
   var path = require( 'path' );
   var fs = require( 'fs-extra' );
   var url = require( 'url' );
+  var request = require( 'request' );
   var querystring = require( 'querystring' );
   var colors = require( 'colors' );
   var Promise = require( 'es6-promise' ).Promise;
@@ -54,7 +55,7 @@
 
   describe( 'Router' , function() {
 
-    it( 'should handle http requests' , function( done ) {
+    it( 'should handle get requests' , function( done ) {
 
       router = new Router( BASE_PATH , { verbose: false });
 
@@ -71,6 +72,33 @@
       })
       .catch( done );
     });
+
+    it( 'should handle post requests' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      router.post( BASE_PATH ).then(function( req , res ) {
+        expect( req.$body ).to.eql( querystring.stringify( data.form ));
+        expect( req.$data ).to.eql( data.form );
+        res.writeHead( 200 );
+        res.end();
+      })
+      .catch(function( req , res , err ) {
+        Router.printStack( err );
+      });
+
+      var reqUrl = url.resolve( BASE_URL , BASE_PATH );
+      var data = { form: { key: 'value' }};
+
+      post( reqUrl , data ).then(function( res ) {
+        expect( res.statusCode ).to.equal( 200 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    // return;
 
     it( 'should anchor base to the beginning of the route' , function( done ) {
 
@@ -625,15 +653,22 @@
   });
 
 
-  function get( url ) {
-    return new Promise(function( resolve ) {
-      var options = {
-        host: 'localhost',
-        port: PORT,
-        path: url,
-        agent: false
-      };
-      http.get( options , resolve );
+  function get( url , data ) {
+    return new Promise(function( resolve , reject ) {
+      request.get( url , data , function ( err , res , body ) {
+        return err ? reject( err ) : resolve( res );
+      });
+    })
+    .then(function( res ) {
+      return res;
+    });
+  }
+
+  function post( url , data ) {
+    return new Promise(function( resolve , reject ) {
+      request.post( url , data , function ( err , res , body ) {
+        return err ? reject( err ) : resolve( res );
+      });
     })
     .then(function( res ) {
       return res;

@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 416efd6 - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 449d8c9 - 2015-02-16 */
 
 (function() {
     "use strict";
@@ -68,9 +68,26 @@
       var that = this;
       var go = that.go.slice( 0 );
       return new requires$$Promise(function( resolve ) {
-        resolve(
-          that._tic( go , req , res )
-        );
+        switch (req.method.toLowerCase()) {
+          case 'get':
+            resolve();
+          break;
+          case 'post':
+            req.on( 'data' , function( chunk ) {
+              that.$emit( 'chunk' , { req: req, chunk: chunk });
+            });
+            req.on( 'end' , resolve );
+          break;
+        }
+      })
+      .then(function() {
+        return new requires$$Promise(function( resolve , reject ) {
+          that.$emit( 'end' , { req: req } , resolve );
+          reject();
+        })
+        .then(function() {
+          return that._tic( go , req , res );
+        });
       })
       .catch(function( err ) {
         var stop = that.stop.slice( 0 );
@@ -110,8 +127,8 @@
 
       var that = this;
       var get = [];
-
-      get.else = new request$handler$$default().then(function( req , res ) {
+      var post = [];
+      var $else = new request$handler$$default().then(function( req , res ) {
         var body = '404 Not Found\n';
         res.writeHead( 404 , {
           'Content-Type': 'text/plain',
@@ -120,10 +137,14 @@
         res.end( body );
       });
 
+      get.else = $else;
+      post.else = $else;
+
       that.verbose = true;
       that.pattern = router$$BuildRegexp( base || '/' , { anchor: true });
       that.routes = {
-        get: get
+        get: get,
+        post: post
       };
 
       requires$$extend( that , options );
@@ -133,12 +154,14 @@
     }
 
     router$$Router.prototype = requires$$E$.create({
+      get: router$$get,
+      post: router$$post,
       testRoute: router$$testRoute,
       handle: router$$handle,
       augment: router$$augment,
       handleE$: router$$handleE$,
-      get: router$$get,
       destroy: router$$destroy,
+      _addRoute: router$$_addRoute,
       _handleHTTP: router$$_handleHTTP,
       _handleRequestHandler: router$$_handleRequestHandler
     });
@@ -178,6 +201,24 @@
       return that.pattern.test( pathname );
     }
 
+    function router$$get( pattern ) {
+      var that = this;
+      return that._addRoute( 'get' , pattern );
+    }
+
+    function router$$post( pattern ) {
+      var that = this;
+      return that._addRoute( 'post' , pattern );
+    }
+
+    function router$$_addRoute( type , pattern ) {
+      var that = this;
+      var reqhandler = new request$handler$$default( pattern );
+      that.$watch( reqhandler );
+      that.routes[type].push( reqhandler );
+      return reqhandler;
+    }
+
     function router$$handle( req , res ) {
       var that = this;
       var parsed = requires$$url.parse( req.url );
@@ -192,6 +233,7 @@
         $path: decodeURIComponent( parsed.pathname ),
         $search: parsed.search,
         $data: requires$$querystring.parse( parsed.query ),
+        $body: req.$body || new Buffer( 0 )
       });
 
       requires$$extend( res , {
@@ -249,15 +291,15 @@
             router$$printStack( data );
           }
         break;
+        case 'chunk':
+          data.req.$body = Buffer.concat([ data.req.$body , data.chunk ]);
+        break;
+        case 'end':
+          data.req.$body = data.req.$body.toString( 'utf-8' );
+          data.req.$data = data.req.$data || {};
+          requires$$extend( data.req.$data , requires$$querystring.parse( data.req.$body ));
+        break;
       }
-    }
-
-    function router$$get( pattern ) {
-      var that = this;
-      var reqhandler = new request$handler$$default( pattern );
-      that.$watch( reqhandler );
-      that.routes.get.push( reqhandler );
-      return reqhandler;
     }
 
     function router$$destroy() {
