@@ -55,7 +55,7 @@
 
   describe( 'Router' , function() {
 
-    it( 'should handle get requests' , function( done ) {
+    it( 'should handle GET requests' , function( done ) {
 
       router = new Router( BASE_PATH , { verbose: false });
 
@@ -73,7 +73,7 @@
       .catch( done );
     });
 
-    it( 'should handle post requests' , function( done ) {
+    it( 'should handle POST requests' , function( done ) {
 
       router = new Router( BASE_PATH , { verbose: false });
 
@@ -82,9 +82,6 @@
         expect( req.$data ).to.eql( data.form );
         res.writeHead( 200 );
         res.end();
-      })
-      .catch(function( req , res , err ) {
-        Router.printStack( err );
       });
 
       var reqUrl = url.resolve( BASE_URL , BASE_PATH );
@@ -370,7 +367,7 @@
       .catch( done );
     });
 
-    it( 'should match multiple routes until engaged' , function( done ) {
+    it( 'should match multiple routes until engaged (GET)' , function( done ) {
 
       router = new Router( BASE_PATH , { verbose: false });
 
@@ -389,6 +386,7 @@
       });
 
       get( group.url ).then(function( res ) {
+        expect( actual ).to.eql( expected );
         expect( res.statusCode ).to.equal( 200 );
         router.destroy();
         done();
@@ -396,7 +394,34 @@
       .catch( done );
     });
 
-    describe( '#get' , function() {
+    it( 'should match multiple routes until engaged (POST)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var group = getRandomRoute();
+      var actual = [];
+      var expected = [ 0 , 1 , 2 ].map(function( i ) {
+        router.post().then(function( req , res ) {
+          actual.push( i );
+        });
+        return i;
+      });
+
+      router.post( group.route ).then(function( req , res ) {
+        res.writeHead( 200 );
+        res.end();
+      });
+
+      post( group.url ).then(function( res ) {
+        expect( actual ).to.eql( expected );
+        expect( res.statusCode ).to.equal( 200 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    describe( '#_addRoute' , function() {
 
       it( 'should accept a string route' , function( done ) {
 

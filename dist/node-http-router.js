@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - fa30e38 - 2015-02-16 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 5e404c8 - 2015-02-16 */
 
 (function() {
     "use strict";
@@ -276,7 +276,6 @@
         for (; i < len; i++) {
           reqhandler = routes[i];
           if (reqhandler.testRoute( parsed.pathname ) && !res.$busy) {
-            // res.$engage();
             reqhandler.exec( req , res );
           }
         }
