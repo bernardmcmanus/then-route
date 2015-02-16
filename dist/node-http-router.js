@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 9a33d12 - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 416efd6 - 2015-02-15 */
 
 (function() {
     "use strict";
@@ -27,6 +27,14 @@
 
     var request$handler$$default = request$handler$$RequestHandler;
 
+    request$handler$$RequestHandler.prototype = requires$$E$.create({
+      testRoute: router$$testRoute,
+      then: request$handler$$then,
+      'catch': request$handler$$$catch,
+      exec: request$handler$$exec,
+      _tic: request$handler$$_tic
+    });
+
     function request$handler$$ParsePattern( pattern ) {
       var reTerminate = /\*$/;
       var reExclusive = /\/\*?$/;
@@ -43,14 +51,6 @@
       }
       return router$$BuildRegexp( pattern , { terminate: terminate, exclusive: exclusive });
     }
-
-    request$handler$$RequestHandler.prototype = requires$$E$.create({
-      testRoute: router$$testRoute,
-      then: request$handler$$then,
-      'catch': request$handler$$$catch,
-      exec: request$handler$$exec,
-      _tic: request$handler$$_tic
-    });
 
     function request$handler$$then( handler ) {
       var that = this;
@@ -132,6 +132,17 @@
       that.$when();
     }
 
+    router$$Router.prototype = requires$$E$.create({
+      testRoute: router$$testRoute,
+      handle: router$$handle,
+      augment: router$$augment,
+      handleE$: router$$handleE$,
+      get: router$$get,
+      destroy: router$$destroy,
+      _handleHTTP: router$$_handleHTTP,
+      _handleRequestHandler: router$$_handleRequestHandler
+    });
+
     function router$$BuildRegexp( pattern , options ) {
 
       var defaults = {
@@ -166,17 +177,6 @@
       var that = this;
       return that.pattern.test( pathname );
     }
-
-    router$$Router.prototype = requires$$E$.create({
-      testRoute: router$$testRoute,
-      handle: router$$handle,
-      augment: router$$augment,
-      handleE$: router$$handleE$,
-      get: router$$get,
-      destroy: router$$destroy,
-      _handleHTTP: router$$_handleHTTP,
-      _handleRequestHandler: router$$_handleRequestHandler
-    });
 
     function router$$handle( req , res ) {
       var that = this;
