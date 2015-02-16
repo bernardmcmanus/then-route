@@ -78,7 +78,7 @@
       router = new Router( BASE_PATH , { verbose: false });
 
       router.post( BASE_PATH ).then(function( req , res ) {
-        expect( req.$body ).to.eql( querystring.stringify( data.form ));
+        expect( req.$body.toString( 'utf-8' )).to.eql( querystring.stringify( data.form ));
         expect( req.$data ).to.eql( data.form );
         res.writeHead( 200 );
         res.end();
@@ -415,6 +415,50 @@
       post( group.url ).then(function( res ) {
         expect( actual ).to.eql( expected );
         expect( res.statusCode ).to.equal( 200 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should send a 404 if never engaged (GET)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var group = getRandomRoute();
+      var actual = [];
+      var expected = [ 0 , 1 , 2 ].map(function( i ) {
+        router.get().then(function( req , res ) {
+          actual.push( i );
+        });
+        return i;
+      });
+
+      get( group.url ).then(function( res ) {
+        expect( actual ).to.eql( expected );
+        expect( res.statusCode ).to.equal( 404 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should send a 404 if never engaged (POST)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var group = getRandomRoute();
+      var actual = [];
+      var expected = [ 0 , 1 , 2 ].map(function( i ) {
+        router.post().then(function( req , res ) {
+          actual.push( i );
+        });
+        return i;
+      });
+
+      post( group.url ).then(function( res ) {
+        expect( actual ).to.eql( expected );
+        expect( res.statusCode ).to.equal( 404 );
         router.destroy();
         done();
       })

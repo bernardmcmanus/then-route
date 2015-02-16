@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 5e404c8 - 2015-02-16 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - a125ddd - 2015-02-16 */
 
 (function() {
     "use strict";
@@ -73,10 +73,15 @@
             resolve();
           break;
           case 'post':
-            req.on( 'data' , function( chunk ) {
-              that.$emit( 'chunk' , { req: req, chunk: chunk });
-            });
-            req.on( 'end' , resolve );
+            if (req.$body.length) {
+              req.on( 'data' , function( chunk ) {
+                that.$emit( 'chunk' , { req: req, chunk: chunk });
+              });
+              req.on( 'end' , resolve );
+            }
+            else {
+              resolve();
+            }
           break;
         }
       })
@@ -134,7 +139,7 @@
       var that = this;
       var get = [];
       var post = [];
-      var $else = new request$handler$$default().then(function( req , res ) {
+      /*var $else = new RequestHandler().then(function( req , res ) {
         var body = '404 Not Found\n';
         res.writeHead( 404 , {
           'Content-Type': 'text/plain',
@@ -144,7 +149,25 @@
       });
 
       get.else = $else;
-      post.else = $else;
+      post.else = $else;*/
+
+      get.else = new request$handler$$default().then(function( req , res ) {
+        var body = '404 Not Found\n';
+        res.writeHead( 404 , {
+          'Content-Type': 'text/plain',
+          'Content-Length': body.length
+        });
+        res.end( body );
+      });
+
+      post.else = new request$handler$$default().then(function( req , res ) {
+        var body = '404 Not Found\n';
+        res.writeHead( 404 , {
+          'Content-Type': 'text/plain',
+          'Content-Length': body.length
+        });
+        res.end( body );
+      });
 
       that.verbose = true;
       that.pattern = router$$BuildRegexp( base || '/' , { anchor: true });
@@ -234,13 +257,39 @@
     function router$$augment( req , res , parsed ) {
       
       var that = this;
+      var length = parseInt( req.headers[ 'content-length' ] , 10 ) || 0;
 
       requires$$extend( req , {
         $path: decodeURIComponent( parsed.pathname ),
         $search: parsed.search,
-        $data: requires$$querystring.parse( parsed.query ),
-        $body: req.$body || new Buffer( 0 )
+        $body: req.$body || new Buffer( length ),
+        $_buffIndex: 0,
+        $_data: parsed.query
       });
+
+      if (!req.$data) {
+        Object.defineProperty( req , '$data' , {
+          get: function() {
+            var data;
+            try {
+              if (req.$body.length) {
+                data = req.$body.toString( 'utf-8' );
+              }
+              else {
+                data = req.$_data;
+              }
+              data = requires$$querystring.parse( data );
+            }
+            catch( err ) {
+              router$$printStack( err );
+              data = {};
+            }
+            finally {
+              return data;
+            }
+          }
+        });
+      }
 
       requires$$extend( res , {
         $engage: function( data ) {
@@ -297,16 +346,20 @@
           }
         break;
         case 'chunk':
-          data.req.$body = Buffer.concat([ data.req.$body , data.chunk ]);
+          (function( req , chunk ) {
+            var offset = req.$_buffIndex;
+            for (var i = 0; i < chunk.length; i++) {
+              req.$body[i + offset] = chunk[i];
+            }
+            req.$_buffIndex = i;
+          }( data.req , data.chunk ));
         break;
         case 'go':
         case 'stop':
           data.res.$engage();
         break;
         case 'end':
-          data.req.$body = data.req.$body.toString( 'utf-8' );
-          data.req.$data = data.req.$data || {};
-          requires$$extend( data.req.$data , requires$$querystring.parse( data.req.$body ));
+          // do something on response end
         break;
       }
     }
