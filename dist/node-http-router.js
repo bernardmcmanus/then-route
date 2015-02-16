@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 5d863f9 - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 9a33d12 - 2015-02-15 */
 
 (function() {
     "use strict";
@@ -26,6 +26,7 @@
     }
 
     var request$handler$$default = request$handler$$RequestHandler;
+
     function request$handler$$ParsePattern( pattern ) {
       var reTerminate = /\*$/;
       var reExclusive = /\/\*?$/;
@@ -161,6 +162,11 @@
       requires$$util.puts( stack.gray );
     }
 
+    function router$$testRoute( pathname ) {
+      var that = this;
+      return that.pattern.test( pathname );
+    }
+
     router$$Router.prototype = requires$$E$.create({
       testRoute: router$$testRoute,
       handle: router$$handle,
@@ -171,11 +177,6 @@
       _handleHTTP: router$$_handleHTTP,
       _handleRequestHandler: router$$_handleRequestHandler
     });
-
-    function router$$testRoute( pathname ) {
-      var that = this;
-      return that.pattern.test( pathname );
-    }
 
     function router$$handle( req , res ) {
       var that = this;
@@ -194,14 +195,6 @@
       });
 
       requires$$extend( res , {
-        /*$engage: function() {
-          var args = arguments;
-          var namespace = args.length < 2 ? '$data' : args[0];
-          var data = args.length > 1 ? args[1] : args[0];
-          res[namespace] = res[namespace] || {};
-          res.$busy = true;
-          extend( res[namespace] , data );
-        },*/
         $engage: function( data ) {
           res.$data = res.$data || {};
           res.$busy = true;
