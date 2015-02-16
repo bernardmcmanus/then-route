@@ -3,9 +3,7 @@ node-http-router
 
 > promise-based, asynchronous http request router
 
-## Basic Use
-
-### Instantiation
+## Instantiation
 ```javascript
 // defaults
 var base = '/';
@@ -14,14 +12,14 @@ var options = { verbose: true };
 var router = new Router( base , options );
 ```
 
-### Server Hook
+## Server Hook
 ```javascript
 var server = http.createServer(function ( req , res ) {
   router.handle( req , res );
 });
 ```
 
-### Routing
+## Routing
 ```javascript
 router.get( '/pattern' ).then(function( req , res ) {
   // matches only "/pattern" or "/pattern/"
@@ -40,7 +38,7 @@ router.get( /^\/\w{2}\d{3}/ ).then(function( req , res ) {
 });
 ```
 
-### Default Responses
+## Default Responses
 ```javascript
 // 404 Not Found
 router.get( '/pattern' ).then(function( req , res ) {
@@ -53,7 +51,7 @@ router.get( '/pattern' ).then(function( req , res ) {
 });
 ```
 
-### Synchronous Responses
+## Synchronous Responses
 ```javascript
 router.get( '/pattern?gnarly=true' ).then(function( req , res ) {
   
@@ -83,7 +81,7 @@ router.get( '/pattern?gnarly=true' ).then(function( req , res ) {
 });
 ```
 
-### Asynchronous Responses
+## Asynchronous Responses
 ```javascript
 router.get( '/pattern' ).then(function( req , res ) {
   
@@ -129,7 +127,7 @@ router.get( '/pattern' ).then(function( req , res ) {
 
 ```
 
-### Error Handling
+## Error Handling
 ```javascript
 // thrown errors
 router.get( '/pattern' ).then(function( req , res ) {
