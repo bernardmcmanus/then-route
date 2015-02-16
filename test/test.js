@@ -98,8 +98,6 @@
       .catch( done );
     });
 
-    // return;
-
     it( 'should anchor base to the beginning of the route' , function( done ) {
 
       router = new Router( BASE_PATH , { verbose: false });
@@ -372,6 +370,32 @@
       .catch( done );
     });
 
+    it( 'should match multiple routes until engaged' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var group = getRandomRoute();
+      var actual = [];
+      var expected = [ 0 , 1 , 2 ].map(function( i ) {
+        router.get().then(function( req , res ) {
+          actual.push( i );
+        });
+        return i;
+      });
+
+      router.get( group.route ).then(function( req , res ) {
+        res.writeHead( 200 );
+        res.end();
+      });
+
+      get( group.url ).then(function( res ) {
+        expect( res.statusCode ).to.equal( 200 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
     describe( '#get' , function() {
 
       it( 'should accept a string route' , function( done ) {
@@ -478,7 +502,7 @@
         .catch( done );
       });
 
-      it( 'should be implied if stop or go are called' , function( done ) {
+      it( 'should be implied if go is called' , function( done ) {
 
         router = new Router( BASE_PATH , { verbose: false });
 
@@ -488,6 +512,51 @@
           res.$go();
         })
         .then(function( req , res ) {
+          expect( res.$busy ).to.be.ok;
+          res.end();
+        });
+
+        get( group.url ).then(function( res ) {
+          expect( res.statusCode ).to.equal( 200 );
+          router.destroy();
+          done();
+        })
+        .catch( done );
+      });
+
+      it( 'should be implied if stop is called' , function( done ) {
+
+        router = new Router( BASE_PATH , { verbose: false });
+
+        var group = getRandomRoute();
+
+        router.get( group.route ).then(function( req , res ) {
+          res.$stop();
+        })
+        .catch(function( req , res , err ) {
+          expect( res.$busy ).to.be.ok;
+          res.end();
+        });
+
+        get( group.url ).then(function( res ) {
+          expect( res.statusCode ).to.equal( 200 );
+          router.destroy();
+          done();
+        })
+        .catch( done );
+      });
+
+      it( 'should not be implied if an error is thrown' , function( done ) {
+
+        router = new Router( BASE_PATH , { verbose: false });
+
+        var group = getRandomRoute();
+
+        router.get( group.route ).then(function( req , res ) {
+          throw new Error( 'error!' );
+        })
+        .catch(function( req , res , err ) {
+          expect( res.$busy ).to.not.be.ok;
           res.end();
         });
 

@@ -88,8 +88,8 @@ router.get( '/pattern' ).then(function( req , res ) {
   // a data object to pass along the chain
   var data = { token: 'xxxxx' };
 
-  // let the router know we
-  // don't want to send a 404
+  // let the router know we don't
+  // want to keep looking for a match
   // and extend res.$data with data
   res.$engage( data );
   

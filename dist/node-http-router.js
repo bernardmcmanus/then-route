@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 449d8c9 - 2015-02-16 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - fa30e38 - 2015-02-16 */
 
 (function() {
     "use strict";
@@ -92,7 +92,7 @@
       .catch(function( err ) {
         var stop = that.stop.slice( 0 );
         if (err instanceof Error) {
-          that.$emit( 'error' , err );
+          that.$emit( 'error' , { req: req, err: err });
         }
         if (stop.length) {
           return that._tic( stop , req , res , err );
@@ -109,14 +109,20 @@
       var func = handlers.shift();
       return new requires$$Promise(function( resolve , reject ) {
         var args = [ req , res ];
-        res.$go = resolve;
-        res.$stop = reject;
+        res.$go = function() {
+          that.$emit( 'go' , { res: res });
+          resolve.apply( null , arguments );
+        };
+        res.$stop = function() {
+          that.$emit( 'stop' , { res: res });
+          reject.apply( null , arguments );
+        };
         if (err) {
           args.push( err );
         }
         func.apply( null , args );
       })
-      .then(function( resolvedArgs ) {
+      .then(function() {
         if (handlers.length) {
           return that._tic( handlers , req , res );
         }
@@ -270,7 +276,7 @@
         for (; i < len; i++) {
           reqhandler = routes[i];
           if (reqhandler.testRoute( parsed.pathname ) && !res.$busy) {
-            res.$engage();
+            // res.$engage();
             reqhandler.exec( req , res );
           }
         }
@@ -288,11 +294,15 @@
       switch (e.type) {
         case 'error':
           if (that.verbose) {
-            router$$printStack( data );
+            router$$printStack( data.err );
           }
         break;
         case 'chunk':
           data.req.$body = Buffer.concat([ data.req.$body , data.chunk ]);
+        break;
+        case 'go':
+        case 'stop':
+          data.res.$engage();
         break;
         case 'end':
           data.req.$body = data.req.$body.toString( 'utf-8' );
