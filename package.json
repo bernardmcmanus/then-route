@@ -1,7 +1,7 @@
 {
   "name": "node-http-router",
   "version": "0.1.0",
-  "description": "RegExp/Promise-based http request router",
+  "description": "promise-based, asynchronous http request router",
   "main": "dist/node-http-router.js",
   "scripts": {
     "test": "mocha test/test.js"
@@ -32,6 +32,10 @@
   },
   "keywords": [
     "http",
+    "promise",
+    "asynchronous",
+    "request",
+    "server",
     "router"
   ],
   "author": {

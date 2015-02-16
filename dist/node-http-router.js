@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 686f552 - 2015-02-15 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 5d863f9 - 2015-02-15 */
 
 (function() {
     "use strict";
@@ -21,11 +21,27 @@
       var that = this;
       that.go = [];
       that.stop = [];
-      that.pattern = router$$BuildRegexp( pattern , { terminate: true });
+      that.pattern = request$handler$$ParsePattern( pattern );
       requires$$E$.construct( that );
     }
 
     var request$handler$$default = request$handler$$RequestHandler;
+    function request$handler$$ParsePattern( pattern ) {
+      var reTerminate = /\*$/;
+      var reExclusive = /\/\*?$/;
+      var terminate = false;
+      var exclusive = false;
+      if (typeof pattern == 'string') {
+        terminate = !reTerminate.test( pattern );
+        exclusive = reExclusive.test( pattern );
+        pattern = pattern
+          .replace( reTerminate , '' )
+          .replace( reExclusive , function( match ) {
+            return terminate ? '' : match;
+          });
+      }
+      return router$$BuildRegexp( pattern , { terminate: terminate, exclusive: exclusive });
+    }
 
     request$handler$$RequestHandler.prototype = requires$$E$.create({
       testRoute: router$$testRoute,
@@ -115,12 +131,12 @@
       that.$when();
     }
 
-    var router$$default = router$$Router;
     function router$$BuildRegexp( pattern , options ) {
 
       var defaults = {
         anchor: false,
         terminate: false,
+        exclusive: false,
         modifiers: undefined
       };
       
@@ -128,7 +144,7 @@
       options = requires$$extend( defaults , options );
 
       var prefix = options.anchor ? '^' : '';
-      var suffix = options.terminate ? '\\/?' : '';
+      var suffix = options.terminate ? '\\/?$' : (options.exclusive ? '.+' : '');
 
       if (typeof pattern == 'string') {
         pattern = pattern.replace( /[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g , '\\$&' );
@@ -174,17 +190,22 @@
       requires$$extend( req , {
         $path: decodeURIComponent( parsed.pathname ),
         $search: parsed.search,
-        $query: requires$$querystring.parse( parsed.query ),
+        $data: requires$$querystring.parse( parsed.query ),
       });
 
       requires$$extend( res , {
-        $engage: function() {
+        /*$engage: function() {
           var args = arguments;
-          var namespace = args.length < 2 ? 'data' : args[0];
+          var namespace = args.length < 2 ? '$data' : args[0];
           var data = args.length > 1 ? args[1] : args[0];
           res[namespace] = res[namespace] || {};
           res.$busy = true;
-          requires$$extend( res[namespace] , data );
+          extend( res[namespace] , data );
+        },*/
+        $engage: function( data ) {
+          res.$data = res.$data || {};
+          res.$busy = true;
+          requires$$extend( res.$data , data );
         },
         $busy: false
       });
@@ -251,7 +272,9 @@
       that.$dispel( null , true );
     }
 
-    var $$index$$default = router$$default;
+    router$$Router.printStack = router$$printStack;
+
+    var $$index$$default = router$$Router;
 
     if (typeof define == 'function' && define.amd) {
       define([], function() { return $$index$$default });

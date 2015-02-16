@@ -5,6 +5,7 @@
   var path = require( 'path' );
   var fs = require( 'fs-extra' );
   var url = require( 'url' );
+  var querystring = require( 'querystring' );
   var colors = require( 'colors' );
   var Promise = require( 'es6-promise' ).Promise;
   var http = require( 'http' );
@@ -23,7 +24,7 @@
   );
 
 
-  var PORT = 8282;
+  var PORT = 8675;
   var BASE_URL = 'http://localhost:' + PORT;
   var BASE_PATH = '/base';
 
@@ -104,6 +105,165 @@
       var reqUrl = url.resolve( BASE_URL , BASE_PATH ) + '/';
       get( reqUrl ).then(function( res ) {
         expect( res.statusCode ).to.equal( 200 );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should match all subdirectories when route ends in a wildcard (inclusive)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var route = '/foo/gnarly*';
+      var group = getRandomRoute( 'foo/gnarly' );
+      var actual = [];
+      var urls = [
+        group.url,
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , 'child' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '../sibling' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )) + '/'
+      ];
+      var expected = urls.map(function( url , i ) {
+        return i;
+      });
+
+      router.get( route ).then(function( req , res ) {
+        res.end();
+      });
+
+      var promises = urls.map(function( url ) {
+        return get( url ).then(function( res ) {
+          expect( res.statusCode ).to.equal( 200 );
+          actual.push( actual.length );
+          return actual.length - 1;
+        });
+      });
+
+      Promise.all( promises ).then(function( result ) {
+        expect( result.length ).to.eql( actual.length );
+        expect( actual.length ).to.eql( expected.length );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should match all subdirectories when route ends in a wildcard (exclusive)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var route = '/foo/gnarly/*';
+      var group = getRandomRoute( 'foo/gnarly' );
+      var actual = [];
+      var urls = [
+        group.url,
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , 'child' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '../sibling' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )) + '/'
+      ];
+      var expected = urls.map(function( url , i ) {
+        return i;
+      });
+
+      router.get( route ).then(function( req , res ) {
+        res.end();
+      });
+
+      var promises = urls.map(function( url ) {
+        return get( url ).then(function( res ) {
+          var code = (/gnarly\/?$/).test( url ) ? 404 : 200;
+          expect( res.statusCode ).to.equal( code );
+          actual.push( actual.length );
+          return actual.length - 1;
+        });
+      });
+
+      Promise.all( promises ).then(function( result ) {
+        expect( result.length ).to.eql( actual.length );
+        expect( actual.length ).to.eql( expected.length );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should match no subdirectories when route does not end in a wildcard (inclusive)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var route = '/foo/gnarly';
+      var group = getRandomRoute( 'foo/gnarly' );
+      var actual = [];
+      var urls = [
+        group.url,
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , 'child' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '../sibling' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )) + '/'
+      ];
+      var expected = urls.map(function( url , i ) {
+        return i;
+      });
+
+      router.get( route ).then(function( req , res ) {
+        res.end();
+      });
+
+      var promises = urls.map(function( url ) {
+        return get( url ).then(function( res ) {
+          var code = (/gnarly\/?$/).test( url ) ? 200 : 404;
+          expect( res.statusCode ).to.equal( code );
+          actual.push( actual.length );
+          return actual.length - 1;
+        });
+      });
+
+      Promise.all( promises ).then(function( result ) {
+        expect( result.length ).to.eql( actual.length );
+        expect( actual.length ).to.eql( expected.length );
+        router.destroy();
+        done();
+      })
+      .catch( done );
+    });
+
+    it( 'should match no subdirectories when route does not end in a wildcard (exclusive)' , function( done ) {
+
+      router = new Router( BASE_PATH , { verbose: false });
+
+      var route = '/foo/gnarly/';
+      var group = getRandomRoute( 'foo/gnarly' );
+      var actual = [];
+      var urls = [
+        group.url,
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , 'child' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '../sibling' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )),
+        url.resolve( BASE_URL , path.join( BASE_PATH , group.route , '..' )) + '/'
+      ];
+      var expected = urls.map(function( url , i ) {
+        return i;
+      });
+
+      router.get( route ).then(function( req , res ) {
+        res.end();
+      });
+
+      var promises = urls.map(function( url ) {
+        return get( url ).then(function( res ) {
+          var code = (/gnarly\/?$/).test( url ) ? 200 : 404;
+          expect( res.statusCode ).to.equal( code );
+          actual.push( actual.length );
+          return actual.length - 1;
+        });
+      });
+
+      Promise.all( promises ).then(function( result ) {
+        expect( result.length ).to.eql( actual.length );
+        expect( actual.length ).to.eql( expected.length );
         router.destroy();
         done();
       })
@@ -269,7 +429,7 @@
         .catch( done );
       });
 
-      it( 'should extend res with a data property by default' , function( done ) {
+      it( 'should extend res.$data' , function( done ) {
 
         router = new Router( BASE_PATH , { verbose: false });
 
@@ -278,28 +438,7 @@
 
         router.get( group.route ).then(function( req , res ) {
           res.$engage( data );
-          expect( res.data ).to.eql( data );
-          res.end();
-        });
-
-        get( group.url ).then(function( res ) {
-          expect( res.statusCode ).to.equal( 200 );
-          router.destroy();
-          done();
-        })
-        .catch( done );
-      });
-
-      it( 'should extend res with a custom property when namespace is passed' , function( done ) {
-
-        router = new Router( BASE_PATH , { verbose: false });
-
-        var group = getRandomRoute();
-        var data = { foo: 'bar' };
-
-        router.get( group.route ).then(function( req , res ) {
-          res.$engage( 'gnarly' , data );
-          expect( res.gnarly ).to.eql( data );
+          expect( res.$data ).to.eql( data );
           res.end();
         });
 
@@ -333,90 +472,156 @@
       });
     });
 
-    describe ( 'res.$go' , function() {
+    describe ( 'req' , function() {
 
-      it( 'should should allow handler chain to continue after #engage is called' , function( done ) {
+      var group = getRandomRoute();
+      var query = 'gnarly=true';
 
-        router = new Router( BASE_PATH , { verbose: false });
+      describe ( '$path' , function() {
+        it( 'should be the absolute request path' , function( done ) {
 
-        var group = getRandomRoute();
-        var continues = 0;
+          router = new Router( BASE_PATH , { verbose: false });
 
-        router.get( group.route ).then(function( req , res ) {
-          res.$engage({
-            continues: function() {
-              continues++;
-              return continues;
-            }
+          router.get( group.route ).then(function( req , res ) {
+            expect( req.$path ).to.equal( path.join( BASE_PATH , group.route ));
+            res.end();
           });
-          expect( arguments.length ).to.equal( 2 );
-          expect( res.data.continues() ).to.equal( 1 );
-          setTimeout(function() {
-            res.$go();
-          }, 20);
-        })
-        .then(function( req , res ) {
-          expect( arguments.length ).to.equal( 2 );
-          expect( res.data.continues() ).to.equal( 2 );
-          setTimeout(function() {
-            res.$go();
-          }, 20);
-        })
-        .then(function( req , res ) {
-          expect( arguments.length ).to.equal( 2 );
-          expect( res.data.continues() ).to.equal( 3 );
-          res.end();
-        });
 
-        get( group.url ).then(function( res ) {
-          expect( res.statusCode ).to.equal( 200 );
-          router.destroy();
-          done();
-        })
-        .catch( done );
-      });
-    });
-
-    describe ( 'res.$stop' , function() {
-
-      it( 'should begin execution of the error handler chain' , function( done ) {
-
-        router = new Router( BASE_PATH , { verbose: false });
-
-        var group = getRandomRoute();
-        var error = new Error( 'error!' );
-        var statusCode = 0;
-
-        router.get( group.route ).then(function( req , res ) {
-          res.$engage();
-          res.$stop( error );
-        })
-        .then(function( req , res ) {
-          expect( false ).to.be.ok;
-        })
-        .catch(function( req , res , err ) {
-          expect( err ).to.equal( error );
-          res.$go();
-        })
-        .then(function( req , res ) {
-          expect( false ).to.be.ok;
-        })
-        .catch(function( req , res , err ) {
-          res.end();
-          setTimeout(function() {
-            expect( statusCode ).to.equal( 200 );
+          get( group.url ).then(function( res ) {
+            expect( res.statusCode ).to.equal( 200 );
             router.destroy();
             done();
-          }, 20);
-        });
+          })
+          .catch( done );
 
-        get( group.url ).then(function( res ) {
-          statusCode = res.statusCode;
-          expect( res.statusCode ).to.equal( 200 );
-        })
-        .catch( done );
+        });
+      });
+
+      describe ( '$search' , function() {
+        it( 'should be the query string' , function( done ) {
+
+          router = new Router( BASE_PATH , { verbose: false });
+
+          router.get( group.route ).then(function( req , res ) {
+            expect( req.$search ).to.equal( '?' + query );
+            res.end();
+          });
+
+          get( group.url + '?' + query ).then(function( res ) {
+            expect( res.statusCode ).to.equal( 200 );
+            router.destroy();
+            done();
+          })
+          .catch( done );
+        });
+      });
+
+      describe ( '$data' , function() {
+        it( 'should be the parsed query data' , function( done ) {
+
+          router = new Router( BASE_PATH , { verbose: false });
+
+          router.get( group.route ).then(function( req , res ) {
+            expect( req.$data ).to.eql( querystring.parse( query ));
+            res.end();
+          });
+
+          get( group.url + '?' + query ).then(function( res ) {
+            expect( res.statusCode ).to.equal( 200 );
+            router.destroy();
+            done();
+          })
+          .catch( done );
+        });
       });
     });
+
+    describe ( 'res' , function() {
+
+      describe ( '$go' , function() {
+        it( 'should should allow handler chain to continue after #engage is called' , function( done ) {
+
+          router = new Router( BASE_PATH , { verbose: false });
+
+          var group = getRandomRoute();
+          var continues = 0;
+
+          router.get( group.route ).then(function( req , res ) {
+            res.$engage({
+              continues: function() {
+                continues++;
+                return continues;
+              }
+            });
+            expect( arguments.length ).to.equal( 2 );
+            expect( res.$data.continues() ).to.equal( 1 );
+            setTimeout(function() {
+              res.$go();
+            }, 20);
+          })
+          .then(function( req , res ) {
+            expect( arguments.length ).to.equal( 2 );
+            expect( res.$data.continues() ).to.equal( 2 );
+            setTimeout(function() {
+              res.$go();
+            }, 20);
+          })
+          .then(function( req , res ) {
+            expect( arguments.length ).to.equal( 2 );
+            expect( res.$data.continues() ).to.equal( 3 );
+            res.end();
+          });
+
+          get( group.url ).then(function( res ) {
+            expect( res.statusCode ).to.equal( 200 );
+            router.destroy();
+            done();
+          })
+          .catch( done );
+        });
+      });
+
+      describe ( '$stop' , function() {
+        it( 'should begin execution of the error handler chain' , function( done ) {
+
+          router = new Router( BASE_PATH , { verbose: false });
+
+          var group = getRandomRoute();
+          var error = new Error( 'error!' );
+          var statusCode = 0;
+
+          router.get( group.route ).then(function( req , res ) {
+            res.$engage();
+            res.$stop( error );
+          })
+          .then(function( req , res ) {
+            expect( false ).to.be.ok;
+          })
+          .catch(function( req , res , err ) {
+            expect( err ).to.equal( error );
+            res.$go();
+          })
+          .then(function( req , res ) {
+            expect( false ).to.be.ok;
+          })
+          .catch(function( req , res , err ) {
+            res.end();
+            setTimeout(function() {
+              expect( statusCode ).to.equal( 200 );
+              router.destroy();
+              done();
+            }, 20);
+          });
+
+          get( group.url ).then(function( res ) {
+            statusCode = res.statusCode;
+            expect( res.statusCode ).to.equal( 200 );
+          })
+          .catch( done );
+        });
+      });
+    });
+
   });
 
 
