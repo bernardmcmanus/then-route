@@ -1,4 +1,4 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - a125ddd - 2015-02-16 */
+/*! node-http-router - 0.1.0 - Bernard McManus - master - 6ff36f9 - 2015-02-22 */
 
 (function() {
     "use strict";
@@ -17,6 +17,8 @@
     var requires$$extend = require( 'extend' );
 
     var requires$$Promise = require( 'es6-promise' ).Promise;
+
+    var requires$$colors = require( 'colors' );
     function request$handler$$RequestHandler( pattern ) {
       var that = this;
       that.go = [];
@@ -221,8 +223,8 @@
       var stack = err.stack.split( '\n' );
       var message = stack.shift();
       stack = stack.join( '\n' );
-      requires$$util.puts( message.red );
-      requires$$util.puts( stack.gray );
+      requires$$util.puts( requires$$colors.red( message ));
+      requires$$util.puts( requires$$colors.gray( stack ));
     }
 
     function router$$testRoute( pathname ) {
