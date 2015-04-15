@@ -1,5 +1,5 @@
-node-http-router
-===============
+then-route
+==========
 
 > promise-based, asynchronous http request router
 

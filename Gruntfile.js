@@ -1,17 +1,12 @@
-
 module.exports = function( grunt ) {
 
-
+  var path = require( 'path' );
   var fs = require( 'fs-extra' );
   var cp = require( 'child_process' );
   var transpiler = require( 'es6-module-transpiler' );
   var Container = transpiler.Container;
   var FileResolver = transpiler.FileResolver;
   var BundleFormatter = transpiler.formatters.bundle;
-
-
-  var LIB = 'lib/*.js';
-
 
   grunt.initConfig({
 
@@ -25,14 +20,14 @@ module.exports = function( grunt ) {
     },
 
     jshint: {
-      all: [ 'Gruntfile.js' , LIB ],
+      all: [ 'Gruntfile.js' , '<%= pkg.config.src %>' ],
       options: {
         esnext: true
       }
     },
 
     'import-clean': {
-      all: LIB
+      all: '<%= pkg.config.src %>'
     },
 
     clean: {
@@ -42,7 +37,7 @@ module.exports = function( grunt ) {
 
     watch: {
       debug: {
-        files: [ 'Gruntfile.js' , LIB , 'build/*.js' , 'test/*.js' ],
+        files: [ 'Gruntfile.js' , '<%= pkg.config.src %>' , 'build/*.js' , 'test/*.js' ],
         tasks: [ 'test' ]
       }
     },
@@ -75,8 +70,9 @@ module.exports = function( grunt ) {
 
     formatter = formatter || BundleFormatter;
 
+    var src = path.dirname( grunt.config.process( '<%= pkg.config.src %>' ));
     var container = new Container({
-      resolvers: [new FileResolver([ 'lib/' ])],
+      resolvers: [new FileResolver([ src ])],
       formatter: new formatter()
     });
 
@@ -148,7 +144,7 @@ module.exports = function( grunt ) {
   grunt.registerTask( 'runTests' , function() {
 
     var done = this.async();
-    var child = cp.spawn( 'npm' , [ 'test' ] , {stdio:['pipe','pipe','ignore']});
+    var child = cp.spawn( 'npm' , [ 'test' ] , {stdio:[ 'pipe' , 'pipe' , 'ignore' ]});
 
     child.on( 'exit' , function( code ) {
       if (code !== 0) {

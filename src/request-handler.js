@@ -1,4 +1,3 @@
-
 import { Promise , E$ } from 'requires';
 import { BuildRegexp , testRoute } from 'router';
 

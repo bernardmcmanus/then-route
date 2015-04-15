@@ -1,23 +1,15 @@
-/*! node-http-router - 0.1.0 - Bernard McManus - master - 6ff36f9 - 2015-02-22 */
+/*! then-route - 0.1.0 - Bernard McManus - master - 5fa7c99 - 2015-04-15 */
 
 (function() {
     "use strict";
     var requires$$url = require( 'url' );
-
     var requires$$path = require( 'path' );
-
     var requires$$querystring = require( 'querystring' );
-
     var requires$$util = require( 'util' );
-
     var requires$$E$ = require( 'emoney' );
-
     var requires$$briskit = require( 'briskit' );
-
     var requires$$extend = require( 'extend' );
-
     var requires$$Promise = require( 'es6-promise' ).Promise;
-
     var requires$$colors = require( 'colors' );
     function request$handler$$RequestHandler( pattern ) {
       var that = this;
