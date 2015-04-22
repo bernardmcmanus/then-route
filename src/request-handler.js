@@ -65,6 +65,9 @@ function exec( req , res ) {
           resolve();
         }
       break;
+      default:
+        resolve();
+      break;
     }
   })
   .then(function() {

@@ -1,4 +1,4 @@
-/*! then-route - 0.1.0 - Bernard McManus - master - 5fa7c99 - 2015-04-15 */
+/*! then-route - 0.1.1 - Bernard McManus - master - gc70ccc - 2015-04-22 */
 
 (function() {
     "use strict";
@@ -77,6 +77,9 @@
               resolve();
             }
           break;
+          default:
+            resolve();
+          break;
         }
       })
       .then(function() {
@@ -128,11 +131,13 @@
       });
     }
 
-    function router$$Router( base , options ) {
+    function router$$Router( base , config ) {
 
       var that = this;
       var get = [];
       var post = [];
+      var options = [];
+      var rescue = [];
       /*var $else = new RequestHandler().then(function( req , res ) {
         var body = '404 Not Found\n';
         res.writeHead( 404 , {
@@ -163,14 +168,24 @@
         res.end( body );
       });
 
+      options.else = new request$handler$$default().then(function( req , res ) {
+        res.end();
+      });
+
+      rescue.else = new request$handler$$default().then(function( req , res ) {
+        res.end();
+      });
+
       that.verbose = true;
       that.pattern = router$$BuildRegexp( base || '/' , { anchor: true });
       that.routes = {
         get: get,
-        post: post
+        post: post,
+        options: options,
+        rescue: rescue
       };
 
-      requires$$extend( that , options );
+      requires$$extend( that , config );
       
       requires$$E$.construct( that );
       that.$when();
@@ -179,6 +194,7 @@
     router$$Router.prototype = requires$$E$.create({
       get: router$$get,
       post: router$$post,
+      options: router$$options,
       testRoute: router$$testRoute,
       handle: router$$handle,
       augment: router$$augment,
@@ -232,6 +248,11 @@
     function router$$post( pattern ) {
       var that = this;
       return that._addRoute( 'post' , pattern );
+    }
+
+    function router$$options( pattern ) {
+      var that = this;
+      return that._addRoute( 'options' , pattern );
     }
 
     function router$$_addRoute( type , pattern ) {
@@ -308,7 +329,7 @@
     function router$$_handleHTTP( e , req , res , parsed ) {
       
       var that = this;
-      var routes = that.routes[e.type] || [];
+      var routes = that.routes[e.type] || that.routes.rescue;
       var reqhandler;
       var i = 0;
       var len = routes.length;

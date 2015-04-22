@@ -10,11 +10,13 @@ import {
 } from 'requires';
 
 
-export function Router( base , options ) {
+export function Router( base , config ) {
 
   var that = this;
   var get = [];
   var post = [];
+  var options = [];
+  var rescue = [];
   /*var $else = new RequestHandler().then(function( req , res ) {
     var body = '404 Not Found\n';
     res.writeHead( 404 , {
@@ -45,14 +47,24 @@ export function Router( base , options ) {
     res.end( body );
   });
 
+  options.else = new RequestHandler().then(function( req , res ) {
+    res.end();
+  });
+
+  rescue.else = new RequestHandler().then(function( req , res ) {
+    res.end();
+  });
+
   that.verbose = true;
   that.pattern = BuildRegexp( base || '/' , { anchor: true });
   that.routes = {
     get: get,
-    post: post
+    post: post,
+    options: options,
+    rescue: rescue
   };
 
-  extend( that , options );
+  extend( that , config );
   
   E$.construct( that );
   that.$when();
@@ -61,6 +73,7 @@ export function Router( base , options ) {
 Router.prototype = E$.create({
   get: get,
   post: post,
+  options: options,
   testRoute: testRoute,
   handle: handle,
   augment: augment,
@@ -114,6 +127,11 @@ function get( pattern ) {
 function post( pattern ) {
   var that = this;
   return that._addRoute( 'post' , pattern );
+}
+
+function options( pattern ) {
+  var that = this;
+  return that._addRoute( 'options' , pattern );
 }
 
 function _addRoute( type , pattern ) {
@@ -190,7 +208,7 @@ function handleE$( e ) {
 function _handleHTTP( e , req , res , parsed ) {
   
   var that = this;
-  var routes = that.routes[e.type] || [];
+  var routes = that.routes[e.type] || that.routes.rescue;
   var reqhandler;
   var i = 0;
   var len = routes.length;
